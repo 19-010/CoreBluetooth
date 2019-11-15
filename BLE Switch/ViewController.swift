@@ -62,12 +62,15 @@ class ViewController: UIViewController, CBCentralManagerDelegate, CBPeripheralDe
         }
 
     }
+    
     func stopScanning(){
         centralManager.stopScan()
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        print("Found Peripheral Name: \(String(describing: peripheral.name))")
+        print(peripheral)
+        
+//        print("Found Peripheral Name: \(String(describing: peripheral.name))")
 
 //        if (peripheral.name != nil){
 //            print("Found Peripheral Name: \(String(describing: peripheral.name))")
@@ -77,10 +80,10 @@ class ViewController: UIViewController, CBCentralManagerDelegate, CBPeripheralDe
 //        }
         
         //Save connected Peripheral
-        connectedPeriperhal = peripheral;
+//        connectedPeriperhal = peripheral;
 //        stopScanning()
         
-        centralManager.connect(connectedPeriperhal, options: nil)
+//        centralManager.connect(connectedPeriperhal, options: nil)
         
         
         
@@ -88,9 +91,9 @@ class ViewController: UIViewController, CBCentralManagerDelegate, CBPeripheralDe
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         print("Connected to \(String(describing: peripheral.name))")
         
-        connectedPeriperhal.delegate = self
+//        connectedPeriperhal.delegate = self
         
-        connectedPeriperhal.discoverServices([BLEService_UUID])
+//        connectedPeriperhal.discoverServices([BLEService_UUID])
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
