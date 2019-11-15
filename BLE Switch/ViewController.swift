@@ -9,23 +9,31 @@
 import UIKit
 import CoreBluetooth
 
+
 class ViewController: UIViewController, CBCentralManagerDelegate, CBPeripheralDelegate{
     
-    let hueService = ""
+    var peripherals:[CBPeripheral] = []
+
     var centralManager: CBCentralManager!
     var connectedPeriperhal: CBPeripheral!
-    
-    
+    var writeCharacteristic: CBCharacteristic!
+
     
     
     @IBOutlet weak var uiSwitch: UISwitch!
-    @IBOutlet weak var shadowView: UIView!
+
+    
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
+    
     @IBAction func uiSwitchVAlueChanged(_ sender: UISwitch) {
         if (sender.isOn){
             print("Switch is ON")
+            
+            writeData(string:"<ON>")
         }else{
-            print("Swtich is OFF")
+            print("Switch is OFF")
+            writeData(string: "<OFF>")
+
         }
     }
 
@@ -35,26 +43,96 @@ class ViewController: UIViewController, CBCentralManagerDelegate, CBPeripheralDe
         centralManager = CBCentralManager(delegate: self, queue:   nil)
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        Timer.scheduledTimer(timeInterval: 5.0, target: self, selector: Selector(("hasConnected")), userInfo: nil, repeats: false)
+    override func viewDidAppear(_ animated: Bool) {
         
-        activityIndicator.startAnimating()
+
         
         //MARK: - Make BLE connection
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
+    override func viewDidDisappear(_ animated: Bool) {
         
         //MARK: - Make Ble Connection
     }
-    @objc func hasConnected(){
-        activityIndicator.stopAnimating()
-        shadowView.isHidden = true
+    func scanForDevices(){
+        centralManager.scanForPeripherals(withServices: nil, options: nil)
+//        centralManager?.scanForPeripherals(withServices:[BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0){
+            self.stopScanning()
+        }
+
+    }
+    func stopScanning(){
+        centralManager.stopScan()
     }
     
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+        print("Found Peripheral Name: \(String(describing: peripheral.name))")
+
+//        if (peripheral.name != nil){
+//            print("Found Peripheral Name: \(String(describing: peripheral.name))")
+//
+//        }else {
+//            print("No device  found")
+//        }
+        
+        //Save connected Peripheral
+        connectedPeriperhal = peripheral;
+//        stopScanning()
+        
+        centralManager.connect(connectedPeriperhal, options: nil)
+        
+        
+        
+    }
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        print("Connected to \(String(describing: peripheral.name))")
+        
+        connectedPeriperhal.delegate = self
+        
+        connectedPeriperhal.discoverServices([BLEService_UUID])
+    }
     
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        
+        print("Service= \(String(describing: peripheral.services!.count))")
+
+        for service in peripheral.services!{
+            print("Services = \(service)")
+
+            let aService = service as CBService
+            if service.uuid == BLEService_UUID{
+                peripheral.discoverCharacteristics(nil, for: aService)
+            }
+
+        }
+        
+      
+
+    }
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        
+      
+        for characteristic in service.characteristics!{
+
+            let aCharacteristic = characteristic as CBCharacteristic
+
+            if aCharacteristic.uuid == BLECharacteristic_UUID{
+                writeCharacteristic = aCharacteristic
+            }
+        }
+    }
+    
+    func writeData(string :String){
+        
+        let data = string.data(using: String.Encoding.utf8)
+        connectedPeriperhal?.writeValue(data!, for: writeCharacteristic, type: CBCharacteristicWriteType.withResponse)
+        
+    
+            
+
+
+ }
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch(central.state){
             
@@ -74,6 +152,7 @@ class ViewController: UIViewController, CBCentralManagerDelegate, CBPeripheralDe
 
         case .poweredOn:
                         print("Powered on")
+            scanForDevices()
 
         @unknown default:
             print("No bluetooth Services available")
